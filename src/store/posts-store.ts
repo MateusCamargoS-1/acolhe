@@ -57,6 +57,7 @@ export const usePostsStore = create<PostsState>((set, get) => ({
     }
   },
   
+  
   createPost: async (post) => {
     set({ isLoading: true, error: null });
     try {

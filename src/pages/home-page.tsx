@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PostForm } from '@/components/posts/post-form';
 import { PostCard } from '@/components/posts/post-card';
 import { CategoryFilter } from '@/components/posts/category-filter';
@@ -8,14 +8,32 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 export function HomePage() {
-  const { posts, fetchPosts, isLoading } = usePostsStore();
+  const { posts, fetchPosts } = usePostsStore();
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   
+  const [localPosts, setLocalPosts] = useState(posts);
+  const [isFetchingNewPosts, setIsFetchingNewPosts] = useState(false);
+
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
-  
+    const fetchAndComparePosts = async () => {
+      setIsFetchingNewPosts(true);
+      await fetchPosts();
+      const newPosts = usePostsStore.getState().posts;
+      setIsFetchingNewPosts(false);
+
+      if (newPosts.length !== posts.length || !newPosts.every((post, index) => post.id === posts[index]?.id)) {
+        setLocalPosts(newPosts);
+      }
+    };
+
+    fetchAndComparePosts();
+
+    const interval = setInterval(fetchAndComparePosts, 5000);
+
+    return () => clearInterval(interval);
+  }, [posts, fetchPosts]);
+
   return (
     <div className="container max-w-4xl py-6">
       <div className="mb-8">
@@ -45,13 +63,13 @@ export function HomePage() {
         <CategoryFilter />
       </div>
       
-      {isLoading ? (
+      {isFetchingNewPosts ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Carregando publicações...</p>
+          <p className="text-muted-foreground">Atualizando publicações...</p>
         </div>
-      ) : posts.length > 0 ? (
+      ) : localPosts.length > 0 ? (
         <div>
-          {posts.map((post) => (
+          {localPosts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
         </div>
