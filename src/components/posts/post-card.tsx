@@ -30,15 +30,17 @@ import { useNavigate } from 'react-router-dom';
 
 interface PostCardProps {
   post: Post;
+  commentCount?: number; 
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, commentCount }: PostCardProps) {
   const { userId } = useAuthStore();
   const { likePost, deletePost } = usePostsStore();
   const navigate = useNavigate();
+  
   const [isLiked, setIsLiked] = useState(post.curtidas.includes(userId || ''));
   const [likeCount, setLikeCount] = useState(post.curtidas.length);
-  
+
   const handleLike = async () => {
     if (!userId) {
       toast.error('Você precisa estar logado para reagir a um post');
@@ -60,19 +62,6 @@ export function PostCard({ post }: PostCardProps) {
   };
   
   const isOwner = userId === post.user_id;
-  
-  // const getCategoriaColor = (categoria: string) => {
-  //   const colors: Record<string, string> = {
-  //     'ansiedade': 'bg-yellow-500',
-  //     'depressão': 'bg-blue-500',
-  //     'motivação': 'bg-green-500',
-  //     'superação': 'bg-purple-500',
-  //     'desabafo': 'bg-red-500',
-  //     'gratidão': 'bg-pink-500',
-  //   };
-    
-  //   return colors[categoria.toLowerCase()] || 'bg-gray-500';
-  // };
   
   return (
     <Card className="mb-4 overflow-hidden">
@@ -125,7 +114,7 @@ export function PostCard({ post }: PostCardProps) {
               ) : (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
                       <Flag className="mr-2 h-4 w-4" />
                       Denunciar
                     </DropdownMenuItem>
@@ -176,6 +165,10 @@ export function PostCard({ post }: PostCardProps) {
               <span>Comentar</span>
             </Link>
           </Button>
+          
+          <div className="text-sm text-muted-foreground">
+            {commentCount} {commentCount === 1 ? 'comentário' : 'comentários'}
+          </div>
         </div>
       </CardFooter>
     </Card>

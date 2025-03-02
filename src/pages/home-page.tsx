@@ -6,21 +6,28 @@ import { usePostsStore } from '@/store/posts-store';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useCommentsStore } from '@/store/comments-store';
 
 export function HomePage() {
   const { posts, fetchPosts } = usePostsStore();
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  
+
   const [localPosts, setLocalPosts] = useState(posts);
   const [isFetchingNewPosts, setIsFetchingNewPosts] = useState(false);
+
+  const { comments, fetchComments } = useCommentsStore();  
 
   useEffect(() => {
     const fetchAndComparePosts = async () => {
       setIsFetchingNewPosts(true);
-      await fetchPosts();
+      await fetchPosts(); 
       const newPosts = usePostsStore.getState().posts;
       setIsFetchingNewPosts(false);
+
+      newPosts.forEach((post) => {
+        fetchComments(post.id); 
+      });
 
       if (newPosts.length !== posts.length || !newPosts.every((post, index) => post.id === posts[index]?.id)) {
         setLocalPosts(newPosts);
@@ -32,7 +39,12 @@ export function HomePage() {
     const interval = setInterval(fetchAndComparePosts, 5000);
 
     return () => clearInterval(interval);
-  }, [posts, fetchPosts]);
+  }, [posts, fetchPosts, fetchComments]);
+
+  const getCommentCount = (postId: string) => {
+    const postComments = comments[postId] || [];
+    return postComments.length;
+  };
 
   return (
     <div className="container max-w-4xl py-6">
@@ -42,7 +54,7 @@ export function HomePage() {
           Um espaço seguro para compartilhar seus sentimentos e receber apoio.
         </p>
       </div>
-      
+
       {isAuthenticated ? (
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Compartilhe o que você está sentindo</h2>
@@ -57,21 +69,23 @@ export function HomePage() {
           <Button onClick={() => navigate('/login')}>Entrar Anonimamente</Button>
         </div>
       )}
-      
+
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Explore publicações</h2>
         <CategoryFilter />
       </div>
-      
+
       {isFetchingNewPosts ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Atualizando publicações...</p>
         </div>
       ) : localPosts.length > 0 ? (
         <div>
-          {localPosts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
+          {localPosts.map((post) => {
+            return (
+              <PostCard key={post.id} post={post} commentCount={getCommentCount(post.id)} />
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12 bg-muted rounded-lg">

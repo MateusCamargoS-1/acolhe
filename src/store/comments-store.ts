@@ -14,7 +14,7 @@ export interface Comment {
 }
 
 interface CommentsState {
-  comments: Record<string, Comment[]>; // post_id -> comments[]
+  comments: Record<string, Comment[]>;
   isLoading: boolean;
   error: string | null;
   fetchComments: (postId: string) => Promise<void>;

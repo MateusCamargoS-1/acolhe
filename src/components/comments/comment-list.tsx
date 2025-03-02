@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,27 +24,42 @@ interface CommentListProps {
 }
 
 export function CommentList({ postId }: CommentListProps) {
-  const { comments, fetchComments, deleteComment, isLoading } = useCommentsStore();
+  const { comments, fetchComments, deleteComment } = useCommentsStore();
   const { userId } = useAuthStore();
-  
+
+  const [localComments, setLocalComments] = useState(comments[postId] || []); 
+
   useEffect(() => {
-    fetchComments(postId);
+    fetchComments(postId); 
   }, [fetchComments, postId]);
-  
-  const postComments = comments[postId] || [];
-  
+
+  useEffect(() => {
+    const fetchAndCompareComments = async () => {
+      await fetchComments(postId);
+      const newComments = useCommentsStore.getState().comments[postId] || []; 
+      
+      if (newComments.length !== localComments.length || !newComments.every((comment, index) => comment.id === localComments[index]?.id)) {
+        setLocalComments(newComments.reverse()); 
+      }
+    };
+
+    fetchAndCompareComments();
+
+    const interval = setInterval(fetchAndCompareComments, 5000);
+
+    return () => clearInterval(interval);
+  }, [localComments, postId, fetchComments]);
+
+  const postComments = localComments || [];
+
   const handleDelete = async (commentId: string) => {
     await deleteComment(commentId, postId);
   };
-  
+
   const handleReport = () => {
     toast.success('Denúncia enviada. Obrigado por ajudar a manter nossa comunidade segura.');
   };
-  
-  if (isLoading) {
-    return <div className="text-center py-4">Carregando comentários...</div>;
-  }
-  
+
   if (postComments.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -52,7 +67,7 @@ export function CommentList({ postId }: CommentListProps) {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-4">
       {postComments.map((comment) => (
